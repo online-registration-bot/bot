@@ -9,14 +9,14 @@ let language;  //this identifies the language the user chooses
 
 //when the user clicks the '/start' command
 bot.start((ctx)=>{
-    bot.telegram.sendMessage(ctx.chat.id,'choose language/ ቋንቋ ይምረጡ።/ afaan filadhaa.',   
+
+    bot.telegram.sendMessage(ctx.chat.id,'choose language/ ቋንቋ ይምረጡ። / afaan filadhaa.',   
     {
         reply_markup:{
             inline_keyboard:[
                 [
                     {text:'English',callback_data:'languageOne'},
                     {text:'አማርኛ',callback_data:'languageTwo'}
-                    
                 ],
                 [
                     {text:'Afaan oromoo',callback_data:'languageThree'}
@@ -26,7 +26,7 @@ bot.start((ctx)=>{
     })
 })   
 
-
+//commands
 //When the user clicks the '/register' command   
  bot.command('register',ctx=>{
     if(language === 1){
@@ -80,6 +80,8 @@ bot.start((ctx)=>{
     
 // })
 
+
+//actions
 bot.action('languageOne',ctx=>{
     language = 1;
     ctx.answerCbQuery();
@@ -87,6 +89,7 @@ bot.action('languageOne',ctx=>{
 })
 
 bot.action('languageTwo',ctx=>{
+    
     language=2;
     ctx.answerCbQuery();
     ctx.reply("ምዝገባ ለመጀመር ይህን ይንኩ'/register'።");
@@ -96,11 +99,12 @@ bot.action('languageThree',ctx=>{
     ctx.answerCbQuery();
     ctx.reply("Galmee jalqabuuf ajaja kana xuqi'/register'።");
 })  
+bo
 
-// bot.action('addis',ctx=>{
-//         ctx.answerCbQuery();
-//         ctx.reply(grade)
-//     })
+
+
+
+
 
 bot.launch()  ; 
     
