@@ -7,7 +7,17 @@ const fs = require("fs"); //to intereact with files on the computer
 const mongoose = require('mongoose'); //to have easier connection with our mongodb database
 const dotenv = require("dotenv"); //to store sensitive information like api keys
 const User = require("./models/User")
-const RegisteredStudent = require("./models/RegisteredStudent")
+const RegisteredStudent = require("./models/RegisteredStudent");
+const { brotliCompress } = require("zlib");
+let questionsKg=["fullName "," year of birth"," picture","parent/guardian fullName","phoneNumber"," Address","picture"];
+let kg2_12Questions = [ "fullName "," year of birth"," picture","transcript","report kard","parent/guardian fullName","phoneNumber"," Address","picture"];
+let questionsKgCOUNTER= 0;
+let kg2_12QuestionCounter = 0;
+let registration= false;
+let payment = false;
+let studentQuestionsKgCOUNTER=0;
+let parentQuestionsKgCOUNTER=0;
+
 // const clearUser = {
 //     language:0,
 //     newStudentRegistering:false,
@@ -54,6 +64,8 @@ mongoose.connect("mongodb://localhost:27017/usersDB",{useNewUrlParser:true, useU
 })
 
 
+
+
 //helper functions
 startHelper = (ctx)=>{
     bot.telegram.sendMessage(ctx.chat.id,'choose language/ ቋንቋ ይምረጡ። / afaan filadhaa.',   
@@ -72,11 +84,22 @@ startHelper = (ctx)=>{
     })
 }
 
+//language helper
+IdAndLanguageConfirmationHelper= async (ctx)=>{
+    const userChatId = ctx.chat.id;
+    const query = {userId:userChatId};
+    const user = await User.findOne(query);
+    const language=user.language;
+    ctx.answerCbQuery();
+    return language;
+}
 //bot
 //when the user clicks the '/start' command
 bot.start(async (ctx)=>{
+    //assign the chat id of a user to a variable
     let userChatId = ctx.chat.id;
-    const user = await User.findOne({userId:ctx.chat.id});
+    //
+    const user = await User.findOne({userId:userChatId});
     if(user){
     console.log("User exists, replaced");
     const query = {userId:userChatId}
@@ -97,8 +120,23 @@ bot.start(async (ctx)=>{
 //commands
 //git commit bot.js -m "we added this feature, and faced this problem and solved by doing this and t"
 //When the user clicks the '/register' command   
- bot.command('register',ctx=>{
-    if(language === 1){
+ bot.command('register', async ctx=>{
+
+    //find the user chat id
+   const userchatId = ctx.chat.id;
+    
+    //find the user on the database(using the chat id=> userId:chatId)
+    const query={userId:userchatId };
+const user =await User.findOne(query); 
+
+    //look at the language the user chose
+const language = user.language;
+
+    //set the language variable to the language the user chose
+
+
+
+    if(language === 0){
     //if the user chooses the first(English) language
     bot.telegram.sendMessage(ctx.chat.id,'choose status ',
      {
@@ -112,7 +150,7 @@ bot.start(async (ctx)=>{
        }
     })}
 
-    else if (language === 2){
+    else if (language === 1){
         //if the user chooses the second(Amharic) language
         bot.telegram.sendMessage(ctx.chat.id,'ለትምህርት ቤታችን',
         {
@@ -127,7 +165,7 @@ bot.start(async (ctx)=>{
           }
        }) 
     }
-    else if(language === 3){
+    else if(language === 2){
         //if the user chooses the third(afaan oromo) language
         bot.telegram.sendMessage(ctx.chat.id,'mana barumsaa keengaaf ',
         {
@@ -153,7 +191,7 @@ bot.start(async (ctx)=>{
 //actions
 bot.action('languageOne', async ctx=>{
     const userChatId = ctx.chat.id;
-    const query = {userId:userChatId}
+    const query = {userId:userChatId};
     await User.findOneAndUpdate(query, {language:0});
     const user = await User.findOne({userId: userChatId});
     console.log(user.language);
@@ -179,10 +217,14 @@ bot.action('languageThree', async ctx=>{
     ctx.answerCbQuery();
     ctx.reply("Galmee jalqabuuf ajaja kana xuqi'/register'።");
 })  
-bot.action('newStudent',ctx=>{
-    ctx.answerCbQuery();
-    if(language===1){
-    
+
+
+///new or current student choice
+bot.action('newStudent',async ctx=>{
+    const language = await IdAndLanguageConfirmationHelper(ctx);
+    registeration =true;
+    console.log(language);
+    if(language===0){
     bot.telegram.sendMessage(ctx.chat.id,'grade',
      {
       reply_markup:{
@@ -218,7 +260,7 @@ bot.action('newStudent',ctx=>{
        }
     })}
 
-     else if(language === 2){
+     else if(language === 1){
         //if the user chooses the second(Amharic) language
         bot.telegram.sendMessage(ctx.chat.id,'ክፍል',
         {
@@ -252,7 +294,7 @@ bot.action('newStudent',ctx=>{
           }
        }) 
     }
-    else if(language === 3){
+    else if(language === 2){
         //if the user chooses the third(afaan oromo) language
         bot.telegram.sendMessage(ctx.chat.id,'kutaa',
         {
@@ -288,9 +330,12 @@ bot.action('newStudent',ctx=>{
        })
     }
 })
-    bot.action('currentStudent',ctx=>{
+
+    bot.action('currentStudent', async ctx=>{
+        const language = await IdAndLanguageConfirmationHelper(ctx);
+        registration 
         ctx.answerCbQuery();
-        if(language==1){
+        if(language===0){
         bot.telegram.sendMessage(ctx.chat.id,'grade',
          {
           reply_markup:{
@@ -326,7 +371,7 @@ bot.action('newStudent',ctx=>{
            }
         })}
     
-         else if(language === 2){
+         else if(language === 1){
             //if the user chooses the second(Amharic) language
             bot.telegram.sendMessage(ctx.chat.id,'ክፍል',
             {
@@ -360,7 +405,7 @@ bot.action('newStudent',ctx=>{
               }
            }) 
         }
-        else if(language === 3){
+        else if(language === 2){
             //if the user chooses the third(afaan oromo) language
             bot.telegram.sendMessage(ctx.chat.id,'kutaa',
             {
@@ -396,13 +441,23 @@ bot.action('newStudent',ctx=>{
            })
         }})
     
-
-
-
-
-
-
+bot.action(['kg1','kg2','kg3','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'] , async ctx=>{
+    const language = await IdAndLanguageConfirmationHelper(ctx)
+    console.log (language);
+    ctx.answerCbQuery();
+    if (language===0){
+        bot.telegram.sendMessage(ctx.chat.id,'fullName')
+    }
+    if (language===1){
+        bot.telegram.sendMessage(ctx.chat.id,'ሙሉ ስም')
+    }
+    if (language===2){
+        bot.telegram.sendMessage(ctx.chat.id,'Maqaa guutuu')
+    }
+      
+        })
+        
 
 bot.launch()  ; 
     
-    
+ 
