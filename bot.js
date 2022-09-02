@@ -1,12 +1,13 @@
 //packages
 const {Telegraf} = require("telegraf") //initializing the telegraf package
-const bot= new Telegraf("5708836919:AAGFsob53vwt5YN9MeTI535rHUaydCzlNi0"); //our bot token
+const dotenv = require("dotenv"); //to store sensitive information like api keys
+dotenv.config();
+const bot= new Telegraf(process.env.TOKEN); //our bot token
 const express = require("express"); //initializing the express package
 const axios = require("axios"); //to send http requests(to connect to hahucloud)
 const app = express(); //our node application
 const fs = require("fs"); //to intereact with files on the computer
 const mongoose = require('mongoose'); //to have easier connection with our mongodb database
-const dotenv = require("dotenv"); //to store sensitive information like api keys
 const User = require("./models/User")
 const RegisteredStudent = require("./models/RegisteredStudent");
 const { brotliCompress } = require("zlib");
