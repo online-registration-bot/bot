@@ -23,6 +23,10 @@ const UserSchema = new mongoose.Schema({
         type:Boolean,
         default:false
     },
+    parentRegistering:{
+        type:Boolean,
+        default:false
+    },
     studentGrade:{
         type:Number
     },
@@ -37,6 +41,9 @@ const UserSchema = new mongoose.Schema({
         type:Number,
         default:0
    },
+    studentId:{
+        type:String  
+    },
     studentName:{
         type:String
     },

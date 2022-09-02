@@ -40,10 +40,22 @@ const studentQuestionCurrent=[["fullname","picture of student","pictureof report
     ["ሙሉ ስም","የተማሪው ፎቶ","የውጤት ካርድ ፎቶ"],
     ["maqaa","suura barataa","suura riipoort kaardii"]];
 
-const parentQuestionCurrent=[["fullname", "phone numeber of parent","address","picture of parent"],
-    ["ሙሉ ስም", "የወላጅ ሰልክ" ,"አድራሻ" ,"የወላጅ ፎቶ"],
+const transitionQuestion = [
+    "you have finished filling the student form next will be parent form",
+    "የተማሪ ፎርም ሞልተው ጨርሰዋል የወላጅ ይከትላል",
+    "Ragaa barataa guuttanii xumurtaniittu,gara ragaa maatiitti darbaa"
+]
+const parentQuestion=[["Parent's fullname", "phone numeber of parent","address","picture of parent"],
+    ["የወላጅ ሙሉ ስም", "የወላጅ ሰልክ" ,"አድራሻ" ,"የወላጅ ፎቶ"],
     ["maqaa","lakkoofsa bilbila maatii","teessoo","suura matii"]]
 
+const successfulRegistrationReply = [
+    "successful registration","successful registration in amharic","successful registration in afaan oromo"
+] 
+
+const errorReply = [
+    "wrong input, please use '/help' to see the command list","successful registration in amharic","successful registration in afaan oromo"
+] 
 
 const gradesInLanguageNew=["grade of the new student","የአዲስ ተማሪው/ዋ ክፍል፡", "kutaa barataa haaraa"];
 const gradesInLanguageCurrent=["grade of the current student","የነባር ተማሪው/ዋ ክፍል", "kutaa barataa duraa"];
@@ -221,8 +233,8 @@ bot.start(async (ctx)=>{
     const user = await userFindingHelper(ctx);
     const language = user.language;
     const query = {userId:userChatId}
-    await User.findOneAndReplace(query, {userId:userChatId, language:language});    
-
+    const studentIdTemp = "student-" + Date.now();
+    await User.findOneAndReplace(query, {userId:userChatId, language:language, studentId:studentIdTemp});    
     if(language === 0){
     //if the user chooses the first(English) language
     studentStatusHelper(ctx,studentStatusQuestions[0])
@@ -367,6 +379,7 @@ bot.on("text",async (ctx)=>{
     const language = user.language;
     const currentStudentRegistering = user.currentStudentRegistering;
     const newStudentRegistering = user.newStudentRegistering;
+    const  parentRegistering=user.parentRegistering;
     let studentQuestionCounter = user.studentQuestionCounter;
     let parentQuestionCounter = user.parentQuestionCounter;
     let questionType=user.questionType;
@@ -375,30 +388,147 @@ bot.on("text",async (ctx)=>{
         //starter
             const questions = studentQuestionNew.find( question => question.type === questionType).questions;
             const questionsInLanguage = questions[language];
-            // if(studentQuestionCounter > questionsInLanguage.length){
-            //     user.newStudentRegistering = false;
-            //     user.parent
-            // }
-
-            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
-            user.studentQuestionCounter = studentQuestionCounter + 1;
-            await user.save();
+            if(studentQuestionCounter >= questionsInLanguage.length){
+                user.newStudentRegistering = false;
+                user.parentRegistering=true;
+                ctx.reply(transitionQuestion[language]);
+                const parentQuestionInLanguge = parentQuestion[language]; 
+                ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
+                user.parentQuestionCounter = parentQuestionCounter + 1;
+                await user.save();
+                
+            }
+            else{
+                ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+                user.studentQuestionCounter = studentQuestionCounter + 1;
+                await user.save();
+            }
                
         }
     else if(currentStudentRegistering){
-        const questionsInLanguage =studentQuestionCurrent[language];
-        ctx.reply(questionsInLanguage[studentQuestionCounter]); 
-        user.studentQuestionCounter = studentQuestionCounter + 1;
-        await user.save();
+        if(studentQuestionCounter >= questionsInLanguage.length){
+            user.currentStudentRegistering = false;
+            user.parentRegistering=true;
+            ctx.reply(transitionQuestion[language]);
+            const parentQuestionInLanguge = parentQuestion[language]; 
+            ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
+            user.parentQuestionCounter = parentQuestionCounter + 1;
+            await user.save();
+        }
+        else{
+            const questionsInLanguage =studentQuestionCurrent[language];
+            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            await user.save();
+        }
         
     }
-    const questions = parentQuestionNew.find( question => question.type === questionType).questions;
-    const questionsInLanguage =studentQuestionCurrent[language];
-    ctx.reply(questionsInLanguage[parentQuestionCounter]); 
-    user.parentQuestionCounter = parentQuestionCounter + 1;
-    await user.save();
-    })
-        
+    else if(parentRegistering===true){
+        if(parentQuestionCounter >= parentQuestion[language].length){
+            ctx.reply(successfulRegistrationReply[language]);
+            ctx.reply("Student id is: "+ user.studentId);
+        }
+        else{
+            const questionsInLanguage =parentQuestion[language];
+            ctx.reply(questionsInLanguage[parentQuestionCounter]); 
+            user.parentQuestionCounter = parentQuestionCounter + 1;
+            await user.save();
+        }
+     }
+     else{
+        ctx.reply(errorReply[language]);
+     }
+   }
+)
+bot.on("photo",async (ctx)=>{
+    const user = await userFindingHelper(ctx);
+    const newStudentRegistering = user.newStudentRegistering;
+    const currentStudentRegistering = user.currentStudentRegistering;
+    const  studentQuestionCounter=user.studentQuestionCounter;
+    const currentQuestionCounter=user.currentQuestionCounter;
+    const parentRegistering= user.parentRegistering;
+    const questionType=user.questionType;
+    const language =user.language;
+    if(newStudentRegistering===true){
+        if(questionType===1){
+            const questions = studentQuestionNew.find( question => question.type === 1).questions;
+            const questionsInLanguage = questions[language];
+            if(studentQuestionCounter===questionsInLanguage.length){
+                ctx.reply(questionsInLanguage[studentQuestionCounter])
+                user.studentQuestionCounter = studentQuestionCounter + 1;
+                await user.save();
+            }
+            else{
+                errorReply[language];
+            }
+        }
+        else if (questionType===2){
+            const questions = studentQuestionNew.find( question => question.type === 2).questions;
+            const questionsInLanguage = questions[language];
+            if(studentQuestionCounter === 4 || studentQuestionCounter===5 ){
+                ctx.reply(questionsInLanguage[studentQuestionCounter])
+                user.studentQuestionCounter = studentQuestionCounter + 1;
+                await user.save();
+            }
+            else{
+                errorReply[language];
+            }
+        }
+        else if(questionType===3){
+            const questions = studentQuestionNew.find( question => question.type === 3).questions;
+            const questionsInLanguage = questions[language];
+            if(studentQuestionCounter===4||studentQuestionCounter===5||studentQuestionCounter===6){
+                ctx.reply(questionsInLanguage[studentQuestionCounter])
+                user.studentQuestionCounter = studentQuestionCounter + 1;
+                await user.save();
+            }
+            else{
+                ctx.reply(errorReply[language]);
+            }
+        }
+    }
+    else if(currentStudentRegistering){
+        const questionsInLanguage = studentQuestionCurrent[language];
+        if(studentQuestionCounter === questionsInLanguage.length){
+            ctx.reply(questionsInLanguage[studentQuestionCounter])
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            await user.save();
+        }
+        else{
+            ctx.reply(errorReply[language]);
+        }
+    }
+
+    else if(parentRegistering){
+        const questionsInLanguage = parentQuestion[language];
+        if(studentQuestionCounter === questionsInLanguage.length){
+            ctx.reply(questionsInLanguage[studentQuestionCounter])
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            await user.save();
+        }
+        else{
+            ctx.reply(errorReply[language]);
+        }
+    }
+    else{
+        ctx.reply(errorReply[language]);
+    }
+ }
+)      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 bot.launch()  ; 
     
  
