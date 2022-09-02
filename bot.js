@@ -25,30 +25,23 @@ const studentQuestionNew = [
         questions:[["fullname","year of birth","sex"," picture of student","picture of report kard"],
         ["ሙሉ ስም","የትውልድ ዘመን", "ጾታ" ,"የተማሪው ፎቶ" ,"የሪፖርት ካርድ በፎቶ"],
         ["Maqaa","waggaa dhalootaa","salla","suura barataa","suura riipoort kaardii"]]
-    }
+    },
     {
-        
-        questions:[["fullname","year of birth","sex"," picture of student","picture of report kard","picture of transcript"],
+        type:3,
+        questions:[["fullname","year of birth","sex"," picture of student","picture of report card","picture of transcript"],
         ["ሙሉ ስም","የትውልድ ዘመን", "ጾታ" ,"የተማሪው ፎቶ" ,"የሪፖርት ካርድ በፎቶ","ትራንስክሪብት በፎቶ"],
         ["Maqaa","waggaa dhalootaa","salla","suura barataa","suura riipoort kaardii","suura tiraaniskiriipti"]]
-    }    
+    }   
 ]
-const studentQuestionCurrent=[{
-    questions:[["fullname","picture of student","pictureof report kard"],
+
+
+const studentQuestionCurrent=[["fullname","picture of student","pictureof report kard"],
     ["ሙሉ ስም","የተማሪው ፎቶ","የውጤት ካርድ ፎቶ"],
-    ["maqaa","suura barataa","suura riipoort kaardii"]]
-}
+    ["maqaa","suura barataa","suura riipoort kaardii"]];
 
-
-
-
-
-]
-const parentQuestionCurrent=[{
-    question:[["fullname", "phone numeber of parent","address","picture of parent"],
+const parentQuestionCurrent=[["fullname", "phone numeber of parent","address","picture of parent"],
     ["ሙሉ ስም", "የወላጅ ሰልክ" ,"አድራሻ" ,"የወላጅ ፎቶ"],
     ["maqaa","lakkoofsa bilbila maatii","teessoo","suura matii"]]
-}]
 
 
 const gradesInLanguageNew=["grade of the new student","የአዲስ ተማሪው/ዋ ክፍል፡", "kutaa barataa haaraa"];
@@ -155,32 +148,32 @@ gradesInLanguageHelper = (ctx, response) =>{
      {
       reply_markup:{
          inline_keyboard:[
-             [      {text:'kg-1',callback_data:'kg1'},
-                    {text:'kg-2',callback_data:'kg2'} ,     
-                    {text:'kg-3',callback_data:'kg3'}
+             [      {text:'kg-1',callback_data:'-2'},
+                    {text:'kg-2',callback_data:'-1'} ,     
+                    {text:'kg-3',callback_data:'0'}
                     
               ],
               [
                  
-                {text:'1',callback_data:'one'},
-                {text:'2',callback_data:'two'}, 
-                {text:'3',callback_data:'three'}
+                {text:'1',callback_data:'1'},
+                {text:'2',callback_data:'2'}, 
+                {text:'3',callback_data:'3'}
                 
               ],
               [
-                {text:'4',callback_data:'four'},
-                {text:'5',callback_data:'five'},
-                {text:'6',callback_data:'six'}
+                {text:'4',callback_data:'4'},
+                {text:'5',callback_data:'5'},
+                {text:'6',callback_data:'6'}
               ],
               [
-                {text:'7',callback_data:'seven'},
-                {text:'8',callback_data:'eight'},
-                {text:'9',callback_data:'nine'}
+                {text:'7',callback_data:'7'},
+                {text:'8',callback_data:'8'},
+                {text:'9',callback_data:'9'}
               ],
               [
-                {text:'10',callback_data:'ten'},
-                {text:'11',callback_data:'eleven'},
-                {text:'12',callback_data:'twelve'}
+                {text:'10',callback_data:'10'},
+                {text:'11',callback_data:'11'},
+                {text:'12',callback_data:'12'}
               ]
           ]
        }
@@ -223,8 +216,11 @@ bot.start(async (ctx)=>{
 //register: when the user clicks the /register command
  bot.command('register', async ctx=>{
     //find the user and the language the user chose using their id
+    const userChatId = ctx.chat.id;
     const user = await userFindingHelper(ctx);
     const language = user.language;
+    const query = {userId:userChatId}
+    await User.findOneAndReplace(query, {userId:userChatId, language:language});    
 
     if(language === 0){
     //if the user chooses the first(English) language
@@ -307,21 +303,100 @@ bot.action('newStudent',async ctx=>{
         }}
     )
 
-bot.action(['kg1','kg2','kg3','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'] , async ctx=>{
+bot.action(['-2','-1','0','1','2','3','4','5','6','7','8','9','10','11','12'] , async ctx=>{
+    const grade = Number(ctx.match[0]);
     const user = await userFindingHelper(ctx);
     const language = user.language;
-    console.log (language);
-    ctx.answerCbQuery();
-    if (language===0){
-        bot.telegram.sendMessage(ctx.chat.id,'fullName')
+    const currentStudentRegistering = user.currentStudentRegistering;
+    const newStudentRegistering = user.newStudentRegistering;
+    let studentQuestionCounter = user.studentQuestionCounter;
+    let parentQuestionCounter = user.parentQuestionCounter;
+    //updating the user grade and save
+    user.studentGrade = grade;
+    await user.save();
+    if(newStudentRegistering){
+        //starter
+        if( grade === -2){
+            user.questionType = 1;
+            await user.save();
+            const questions = studentQuestionNew.find( question => question.type === 1).questions;
+            const questionsInLanguage = questions[language];
+            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            await user.save();
+            ctx.answerCbQuery();    
+        }
+        else if(grade>=-1 && grade<=8){
+            user.questionType=2;
+            await user.save();
+            const questions = studentQuestionNew.find( question => question.type === 2).questions;
+            const questionsInLanguage = questions[language];
+            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            await user.save();
+            ctx.answerCbQuery();    
+         }
+        else if(grade>=9 && grade<=12){
+            user.questionType=3;
+            await user.save();
+            const questions = studentQuestionNew.find( question => question.type === 3).questions;
+            const questionsInLanguage = questions[language];
+            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            await user.save();
+            ctx.answerCbQuery();    
+         }
     }
-    if (language===1){
-        bot.telegram.sendMessage(ctx.chat.id,'ሙሉ ስም')
+    else if(currentStudentRegistering){
+        user.studentQuestionCurrent;
+        await user.save();
+        const questionsInLanguage =studentQuestionCurrent[language];
+        ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+        user.studentQuestionCounter = studentQuestionCounter + 1;
+        await user.save();
+        ctx.answerCbQuery();    
     }
-    if (language===2){
-        bot.telegram.sendMessage(ctx.chat.id,'Maqaa guutuu')
-    }
+    
 })
+
+bot.on("text",async (ctx)=>{
+    
+    const user = await userFindingHelper(ctx);
+    const grade = user.grade;
+    const language = user.language;
+    const currentStudentRegistering = user.currentStudentRegistering;
+    const newStudentRegistering = user.newStudentRegistering;
+    let studentQuestionCounter = user.studentQuestionCounter;
+    let parentQuestionCounter = user.parentQuestionCounter;
+    let questionType=user.questionType;
+    //updating the user grade and save
+    if(newStudentRegistering){
+        //starter
+            const questions = studentQuestionNew.find( question => question.type === questionType).questions;
+            const questionsInLanguage = questions[language];
+            // if(studentQuestionCounter > questionsInLanguage.length){
+            //     user.newStudentRegistering = false;
+            //     user.parent
+            // }
+
+            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            await user.save();
+               
+        }
+    else if(currentStudentRegistering){
+        const questionsInLanguage =studentQuestionCurrent[language];
+        ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+        user.studentQuestionCounter = studentQuestionCounter + 1;
+        await user.save();
+        
+    }
+    const questions = parentQuestionNew.find( question => question.type === questionType).questions;
+    const questionsInLanguage =studentQuestionCurrent[language];
+    ctx.reply(questionsInLanguage[parentQuestionCounter]); 
+    user.parentQuestionCounter = parentQuestionCounter + 1;
+    await user.save();
+    })
         
 bot.launch()  ; 
     

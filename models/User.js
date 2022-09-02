@@ -24,16 +24,18 @@ const UserSchema = new mongoose.Schema({
         default:false
     },
     studentGrade:{
-        type:String
+        type:Number
     },
-    quesitonType:{
+    questionType:{
         type:Number
     },
    studentQuestionCounter:{
-        type:Number
+        type:Number,
+        default:0
    },
    parentQuestionCounter:{
-        type:Number
+        type:Number,
+        default:0
    },
     studentName:{
         type:String
