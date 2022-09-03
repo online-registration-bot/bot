@@ -41,47 +41,14 @@ const UserSchema = new mongoose.Schema({
         type:Number,
         default:0
    },
-    studentId:{
-        type:String  
-    },
-    studentName:{
-        type:String
-    },
-    studentSex:{
-        type:String
-    },
-    yearOfBirth:{
-        type:String
-    },
-    studentPicture:{
-        type:String
-    },
-    reportCard:{
-        type:String
-    },
-    transcript:{
-        type:String
-    },
-    parentName:{
-        type:String
-    },
-    
-    parentSex:{
-        type:String
-    },
-    parentPhoneNumber:{
-        type:String
-    },
-    address:{
-        type:String
-    },
-    parentPicture:{
-        type:String
-    },
-    finishedRegistering:{
-        type:Boolean,
-        default:false
-    }
+   studentInfo:{
+    type:Array,
+    default:[]
+   },
+   parentInfo:{
+    type:Array,
+    default:[]
+   },
 },
     {timestamps:true}
 )

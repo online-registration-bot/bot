@@ -31,12 +31,12 @@ const studentQuestionNew = [
         type:3,
         questions:[["fullname","year of birth","sex"," picture of student","picture of report card","picture of transcript"],
         ["ሙሉ ስም","የትውልድ ዘመን", "ጾታ" ,"የተማሪው ፎቶ" ,"የሪፖርት ካርድ በፎቶ","ትራንስክሪብት በፎቶ"],
-        ["Maqaa","waggaa dhalootaa","salla","suura barataa","suura riipoort kaardii","suura tiraaniskiriipti"]]
+        ["Maqaa","waggaa dhalootaa"," salla","suura barataa","suura riipoort kaardii","suura tiraaniskiriipti"]]
     }   
 ]
 
 
-const studentQuestionCurrent=[["fullname","picture of student","pictureof report kard"],
+const studentQuestionCurrent=[["fullname","picture of student","picture of report kard"],
     ["ሙሉ ስም","የተማሪው ፎቶ","የውጤት ካርድ ፎቶ"],
     ["maqaa","suura barataa","suura riipoort kaardii"]];
 
@@ -48,13 +48,13 @@ const transitionQuestion = [
 const parentQuestion=[["Parent's fullname", "phone numeber of parent","address","picture of parent"],
     ["የወላጅ ሙሉ ስም", "የወላጅ ሰልክ" ,"አድራሻ" ,"የወላጅ ፎቶ"],
     ["maqaa","lakkoofsa bilbila maatii","teessoo","suura matii"]]
-
+ 
 const successfulRegistrationReply = [
-    "successful registration","successful registration in amharic","successful registration in afaan oromo"
+    "you have finished filling the form wait untill the information is detected you will recive SMStext of confirmation   ","ፎርሙን ሞልተው ጨርሰዋል ትንሽ  ይጠብኩ የማረጋገጫ SMS መለክት ይገባሎታል  ","formii gutanii xumurtanii jirtuu xiqqoo eegee ergaan gabaabee isin ga'aati."
 ] 
 
 const errorReply = [
-    "wrong input, please use '/help' to see the command list","successful registration in amharic","successful registration in afaan oromo"
+    "wrong input, please use '/help' to see the command list","የተሳሳተ መርጃ እባኮት '/help'በመጫን የሚተከሟቸወን ትዕዛዛት የመልከቱ ",""
 ] 
 
 const gradesInLanguageNew=["grade of the new student","የአዲስ ተማሪው/ዋ ክፍል፡", "kutaa barataa haaraa"];
@@ -388,24 +388,15 @@ bot.on("text",async (ctx)=>{
         //starter
             const questions = studentQuestionNew.find( question => question.type === questionType).questions;
             const questionsInLanguage = questions[language];
-            if(studentQuestionCounter >= questionsInLanguage.length){
-                user.newStudentRegistering = false;
-                user.parentRegistering=true;
-                ctx.reply(transitionQuestion[language]);
-                const parentQuestionInLanguge = parentQuestion[language]; 
-                ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
-                user.parentQuestionCounter = parentQuestionCounter + 1;
-                await user.save();
-                
-            }
-            else{
-                ctx.reply(questionsInLanguage[studentQuestionCounter]); 
-                user.studentQuestionCounter = studentQuestionCounter + 1;
-                await user.save();
-            }
-               
-        }
+            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            user.studentInfo.push(ctx.message.text);
+            await user.save();
+            console.log(user);
+
+    }
     else if(currentStudentRegistering){
+        const questionsInLanguage = studentQuestionCurrent[language];
         if(studentQuestionCounter >= questionsInLanguage.length){
             user.currentStudentRegistering = false;
             user.parentRegistering=true;
@@ -413,18 +404,21 @@ bot.on("text",async (ctx)=>{
             const parentQuestionInLanguge = parentQuestion[language]; 
             ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
             user.parentQuestionCounter = parentQuestionCounter + 1;
+            user.studentInfo.push(ctx.message.text);
             await user.save();
         }
         else{
             const questionsInLanguage =studentQuestionCurrent[language];
             ctx.reply(questionsInLanguage[studentQuestionCounter]); 
             user.studentQuestionCounter = studentQuestionCounter + 1;
+            user.studentInfo.push(ctx.message.text);
             await user.save();
         }
         
     }
     else if(parentRegistering===true){
-        if(parentQuestionCounter >= parentQuestion[language].length){
+        if(parentQuestionCounter === parentQuestion[language].length){
+            const student = new RegisteredStudent();
             ctx.reply(successfulRegistrationReply[language]);
             ctx.reply("Student id is: "+ user.studentId);
         }
@@ -432,7 +426,9 @@ bot.on("text",async (ctx)=>{
             const questionsInLanguage =parentQuestion[language];
             ctx.reply(questionsInLanguage[parentQuestionCounter]); 
             user.parentQuestionCounter = parentQuestionCounter + 1;
+            user.parentInfo.push(ctx.message.text);
             await user.save();
+            console.log(user);
         }
      }
      else{
@@ -445,18 +441,26 @@ bot.on("photo",async (ctx)=>{
     const newStudentRegistering = user.newStudentRegistering;
     const currentStudentRegistering = user.currentStudentRegistering;
     const  studentQuestionCounter=user.studentQuestionCounter;
-    const currentQuestionCounter=user.currentQuestionCounter;
+    const parentQuestionCounter=user.parentQuestionCounter;
     const parentRegistering= user.parentRegistering;
     const questionType=user.questionType;
     const language =user.language;
     if(newStudentRegistering===true){
-        if(questionType===1){
+        if(questionType ===1 ){
             const questions = studentQuestionNew.find( question => question.type === 1).questions;
             const questionsInLanguage = questions[language];
-            if(studentQuestionCounter===questionsInLanguage.length){
-                ctx.reply(questionsInLanguage[studentQuestionCounter])
-                user.studentQuestionCounter = studentQuestionCounter + 1;
+            if(studentQuestionCounter === questionsInLanguage.length){
+                user.newStudentRegistering = false;
+                user.parentRegistering=true;
+                ctx.reply(transitionQuestion[language]);
+                const parentQuestionInLanguge = parentQuestion[language]; 
+                ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
+                user.parentQuestionCounter = parentQuestionCounter + 1;
+                console.log(ctx.message);
+                user.studentInfo.push(ctx.message.photo[0].file_id);
                 await user.save();
+               
+                console.log(user);
             }
             else{
                 errorReply[language];
@@ -465,10 +469,23 @@ bot.on("photo",async (ctx)=>{
         else if (questionType===2){
             const questions = studentQuestionNew.find( question => question.type === 2).questions;
             const questionsInLanguage = questions[language];
-            if(studentQuestionCounter === 4 || studentQuestionCounter===5 ){
+            if(studentQuestionCounter === 4){
                 ctx.reply(questionsInLanguage[studentQuestionCounter])
                 user.studentQuestionCounter = studentQuestionCounter + 1;
+                user.studentInfo.push(ctx.message.photo[0].file_id);
                 await user.save();
+                console.log(user);
+            } 
+            if(studentQuestionCounter === 5 ){
+                user.newStudentRegistering = false;
+                user.parentRegistering=true;
+                ctx.reply(transitionQuestion[language]);
+                const parentQuestionInLanguge = parentQuestion[language]; 
+                ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
+                user.parentQuestionCounter = parentQuestionCounter + 1;
+                user.studentInfo.push(ctx.message.photo[0].file_id);
+                await user.save();
+                console.log(user);
             }
             else{
                 errorReply[language];
@@ -477,10 +494,23 @@ bot.on("photo",async (ctx)=>{
         else if(questionType===3){
             const questions = studentQuestionNew.find( question => question.type === 3).questions;
             const questionsInLanguage = questions[language];
-            if(studentQuestionCounter===4||studentQuestionCounter===5||studentQuestionCounter===6){
+            if(studentQuestionCounter===4||studentQuestionCounter===5){
                 ctx.reply(questionsInLanguage[studentQuestionCounter])
                 user.studentQuestionCounter = studentQuestionCounter + 1;
+                user.studentInfo.push(ctx.message.photo[0].file_id);
                 await user.save();
+                console.log(user);
+            }
+            if(studentQuestionCounter===6){
+                user.newStudentRegistering = false;
+                user.parentRegistering=true;
+                ctx.reply(transitionQuestion[language]);
+                const parentQuestionInLanguge = parentQuestion[language]; 
+                ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
+                user.parentQuestionCounter = parentQuestionCounter + 1;
+                user.studentInfo.push(ctx.message.photo[0].file_id);
+                await user.save();
+                console.log(user);
             }
             else{
                 ctx.reply(errorReply[language]);
@@ -490,9 +520,15 @@ bot.on("photo",async (ctx)=>{
     else if(currentStudentRegistering){
         const questionsInLanguage = studentQuestionCurrent[language];
         if(studentQuestionCounter === questionsInLanguage.length){
-            ctx.reply(questionsInLanguage[studentQuestionCounter])
-            user.studentQuestionCounter = studentQuestionCounter + 1;
+            user.newStudentRegistering = false;
+            user.parentRegistering=true;
+            ctx.reply(transitionQuestion[language]);
+            const parentQuestionInLanguge = parentQuestion[language]; 
+            ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
+            user.parentQuestionCounter = parentQuestionCounter + 1;
+            user.studentInfo.push(ctx.message.photo[0].file_id);
             await user.save();
+            console.log(user);
         }
         else{
             ctx.reply(errorReply[language]);
@@ -501,10 +537,26 @@ bot.on("photo",async (ctx)=>{
 
     else if(parentRegistering){
         const questionsInLanguage = parentQuestion[language];
-        if(studentQuestionCounter === questionsInLanguage.length){
-            ctx.reply(questionsInLanguage[studentQuestionCounter])
-            user.studentQuestionCounter = studentQuestionCounter + 1;
+        if(parentQuestionCounter === questionsInLanguage.length){
+            // const student = new RegisteredStudent({studentId:user.studentId, studentName:user.studentName})
+            // ctx.reply(questionsInLanguage[studentQuestionCounter])
+            // user.studentQuestionCounter = studentQuestionCounter + 1;
+            // await user.save();
+            user.parentInfo.push(ctx.message.photo[0].file_id);
+            ctx.reply(successfulRegistrationReply[language]);
             await user.save();
+            const registeredStudent = new RegisteredStudent({
+                studentName: user.studentInfo[0],
+                yearOfBirth: user.studentInfo[1],
+                studentSex: user.studentInfo[2],
+                studentPicture: user.studentInfo[3],
+                parentName: user.parentInfo[0],
+                parentPhoneNumber: user.parentInfo[1],
+                address: user.parentInfo[2],
+                parentPicture: user.parentInfo[3]
+            });
+            await registeredStudent.save();
+            console.log(registeredStudent);
         }
         else{
             ctx.reply(errorReply[language]);
@@ -515,18 +567,6 @@ bot.on("photo",async (ctx)=>{
     }
  }
 )      
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 bot.launch()  ; 

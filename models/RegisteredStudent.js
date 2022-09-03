@@ -37,10 +37,10 @@ const RegisteredStudentSchema = new mongoose.Schema({
     parentPicture:{
         type:String
     },
-    studentId:{
-        type:String,
-        required:true
-    }
+    // studentId:{
+    //     type:String,
+    //     required:true
+    // }
 })
 
 
