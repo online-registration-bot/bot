@@ -2,7 +2,7 @@
 const {Telegraf} = require("telegraf") //initializing the telegraf package
 const dotenv = require("dotenv"); //to store sensitive information like api keys
 dotenv.config();
-const bot= new Telegraf(process.env.TOKEN); //our bot token
+const bot= new Telegraf("5651154924:AAGWJR6dWsS19jCadqFYMDBQTR6tZen2ln0"); //our bot token
 const express = require("express"); //initializing the express package
 const axios = require("axios"); //to send http requests(to connect to hahucloud)
 const app = express(); //our node application
@@ -10,8 +10,7 @@ const fs = require("fs"); //to intereact with files on the computer
 const mongoose = require('mongoose'); //to have easier connection with our mongodb database
 const User = require("./models/User")
 const RegisteredStudent = require("./models/RegisteredStudent");
-const { brotliCompress } = require("zlib");
-const { response } = require("express");
+
 
 //variables
 const studentQuestionNew = [
@@ -529,6 +528,7 @@ bot.on("photo",async (ctx)=>{
             user.studentInfo.push(ctx.message.photo[0].file_id);
             await user.save();
             console.log(user);
+
         }
         else{
             ctx.reply(errorReply[language]);
@@ -545,18 +545,36 @@ bot.on("photo",async (ctx)=>{
             user.parentInfo.push(ctx.message.photo[0].file_id);
             ctx.reply(successfulRegistrationReply[language]);
             await user.save();
-            const registeredStudent = new RegisteredStudent({
-                studentName: user.studentInfo[0],
-                yearOfBirth: user.studentInfo[1],
-                studentSex: user.studentInfo[2],
-                studentPicture: user.studentInfo[3],
-                parentName: user.parentInfo[0],
-                parentPhoneNumber: user.parentInfo[1],
-                address: user.parentInfo[2],
-                parentPicture: user.parentInfo[3]
-            });
-            await registeredStudent.save();
-            console.log(registeredStudent);
+
+            if(user.questionType === 1){
+                const registeredStudent = new RegisteredStudent({
+                    studentName: user.studentInfo[0],
+                    yearOfBirth: user.studentInfo[1],
+                    studentSex: user.studentInfo[2],
+                    studentPicture: user.studentInfo[3],
+                    parentName: user.parentInfo[0],
+                    parentPhoneNumber: user.parentInfo[1],
+                    address: user.parentInfo[2],
+                    parentPicture: user.parentInfo[3]
+                });
+                await registeredStudent.save();
+                console.log(registeredStudent);
+            }
+            if(user.questionType === 2){
+                const registeredStudent = new RegisteredStudent({
+                    studentName: user.studentInfo[0],
+                    yearOfBirth: user.studentInfo[1],
+                    studentSex: user.studentInfo[2],
+                    studentPicture: user.studentInfo[3],
+                    reportCard: user.studentInfo[4], 
+                    parentName: user.parentInfo[0],
+                    parentPhoneNumber: user.parentInfo[1],
+                    address: user.parentInfo[2],
+                    parentPicture: user.parentInfo[3]
+                });
+                await registeredStudent.save();
+                console.log(registeredStudent);
+            }
         }
         else{
             ctx.reply(errorReply[language]);
@@ -567,7 +585,6 @@ bot.on("photo",async (ctx)=>{
     }
  }
 )      
-
 
 bot.launch()  ; 
     
