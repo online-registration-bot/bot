@@ -2,7 +2,7 @@
 const {Telegraf} = require("telegraf") //initializing the telegraf package
 const dotenv = require("dotenv"); //to store sensitive information like api keys
 dotenv.config();
-const bot= new Telegraf("5651154924:AAGWJR6dWsS19jCadqFYMDBQTR6tZen2ln0"); //our bot token
+const bot= new Telegraf("TOKEN"); //our bot token
 const express = require("express"); //initializing the express package
 const axios = require("axios"); //to send http requests(to connect to hahucloud)
 const app = express(); //our node application
