@@ -15,6 +15,19 @@ const UserSchema = new mongoose.Schema({
         default:0
     },
     //registration
+    //new
+    newStudent:{
+        type:Boolean,
+        default:false
+    },
+    currentStudent:{
+        type:Boolean,
+        default:false
+    },
+    studentId:{
+        type:String
+    },
+    //new
     newStudentRegistering:{
         type:Boolean,
         default:false

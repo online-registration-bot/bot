@@ -10,6 +10,9 @@ const ApprovedStudentSchema = new mongoose.Schema({
     },
     grade:{
         type:String
+    },
+    parentId:{
+        type:String
     }
 },
     {

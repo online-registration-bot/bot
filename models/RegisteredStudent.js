@@ -7,6 +7,9 @@ const RegisteredStudentSchema = new mongoose.Schema({
     studentName:{
         type:String
     },
+    studentId:{
+        type:String
+    }, //new
     studentSex:{
         type:String
     },
@@ -37,10 +40,10 @@ const RegisteredStudentSchema = new mongoose.Schema({
     parentPicture:{
         type:String
     },
-    // studentId:{
-    //     type:String,
-    //     required:true
-    // }
+    seen:{
+        type:Boolean,
+        default:false
+    }
 })
 
 

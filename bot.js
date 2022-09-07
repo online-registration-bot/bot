@@ -2,13 +2,11 @@
 const {Telegraf} = require("telegraf") //initializing the telegraf package
 const dotenv = require("dotenv"); //to store sensitive information like api keys
 dotenv.config();
-const bot= new Telegraf("5651154924:AAGWJR6dWsS19jCadqFYMDBQTR6tZen2ln0"); //our bot token
-const express = require("express"); //initializing the express package
+const bot= new Telegraf(process.env.TOKEN); //our bot token
 const axios = require("axios"); //to send http requests(to connect to hahucloud)
-const app = express(); //our node application
 const fs = require("fs"); //to intereact with files on the computer
 const mongoose = require('mongoose'); //to have easier connection with our mongodb database
-const User = require("./models/User")
+const User = require("./models/User");
 const RegisteredStudent = require("./models/RegisteredStudent");
 
 
@@ -35,9 +33,9 @@ const studentQuestionNew = [
 ]
 
 
-const studentQuestionCurrent=[["fullname","picture of student","picture of report kard"],
+const studentQuestionCurrent=[["fullname","picture of student","picture of report card"],
     ["ሙሉ ስም","የተማሪው ፎቶ","የውጤት ካርድ ፎቶ"],
-    ["maqaa","suura barataa","suura riipoort kaardii"]];
+    ["maqaa","suura barataa","suura riipoort kaardii"]]; //new: student id?
 
 const transitionQuestion = [
     "you have finished filling the student form next will be parent form",
@@ -105,7 +103,6 @@ mongoose.connect("mongodb://localhost:27017/usersDB",{useNewUrlParser:true, useU
 
 
 ////////////////helper functions//////////////////////
-
 //start helper: responds the start page
 startHelper = (ctx)=>{
     bot.telegram.sendMessage(ctx.chat.id,'choose language/ ቋንቋ ይምረጡ። / afaan filadhaa.',   
@@ -192,7 +189,7 @@ gradesInLanguageHelper = (ctx, response) =>{
     })
 }
 
-
+//questions in language helper: returns 
 
 
 
@@ -224,7 +221,6 @@ bot.start(async (ctx)=>{
     }
 )   
 
-
 //register: when the user clicks the /register command
  bot.command('register', async ctx=>{
     //find the user and the language the user chose using their id
@@ -248,6 +244,19 @@ bot.start(async (ctx)=>{
     studentStatusHelper(ctx,studentStatusQuestions[2])
     }
 })
+
+//
+
+
+
+
+
+
+
+
+
+
+
 
 //////////actions//////////
 
@@ -275,6 +284,10 @@ bot.action('newStudent',async ctx=>{
     const language = user.language;
     user.newStudentRegistering = true;
     user.currentStudentRegistering = false;
+    //new
+    user.newStudent = true;
+    user.currentStudent = false;
+    //new
     await user.save();
     console.log(user);
     if(language===0){
@@ -299,6 +312,10 @@ bot.action('newStudent',async ctx=>{
         const language = user.language;
         user.currentStudentRegistering = true;
         user.newStudentRegistering = false;
+        //new
+        user.newStudent = false;
+        user.currentStudent = true;
+        //new
         await user.save();
         console.log(user); 
         ctx.answerCbQuery();
@@ -328,7 +345,9 @@ bot.action(['-2','-1','0','1','2','3','4','5','6','7','8','9','10','11','12'] , 
     await user.save();
     if(newStudentRegistering){
         //starter
-        if( grade === -2){
+        user.studentId = "S-"+Date.now();
+        await user.save();
+        if( user.studentGrade === -2){ //new
             user.questionType = 1;
             await user.save();
             const questions = studentQuestionNew.find( question => question.type === 1).questions;
@@ -338,7 +357,7 @@ bot.action(['-2','-1','0','1','2','3','4','5','6','7','8','9','10','11','12'] , 
             await user.save();
             ctx.answerCbQuery();    
         }
-        else if(grade>=-1 && grade<=8){
+        else if(user.studentGrade >=-1 && user.studentGrade<=8){ //new
             user.questionType=2;
             await user.save();
             const questions = studentQuestionNew.find( question => question.type === 2).questions;
@@ -348,7 +367,7 @@ bot.action(['-2','-1','0','1','2','3','4','5','6','7','8','9','10','11','12'] , 
             await user.save();
             ctx.answerCbQuery();    
          }
-        else if(grade>=9 && grade<=12){
+        else if(user.studentGrade >=9 && user.studentGrade<=12){ //new
             user.questionType=3;
             await user.save();
             const questions = studentQuestionNew.find( question => question.type === 3).questions;
@@ -374,7 +393,7 @@ bot.action(['-2','-1','0','1','2','3','4','5','6','7','8','9','10','11','12'] , 
 bot.on("text",async (ctx)=>{
     
     const user = await userFindingHelper(ctx);
-    const grade = user.grade;
+    const grade = user.studentGrade;
     const language = user.language;
     const currentStudentRegistering = user.currentStudentRegistering;
     const newStudentRegistering = user.newStudentRegistering;
@@ -385,49 +404,46 @@ bot.on("text",async (ctx)=>{
     //updating the user grade and save
     if(newStudentRegistering){
         //starter
-            const questions = studentQuestionNew.find( question => question.type === questionType).questions;
-            const questionsInLanguage = questions[language];
-            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
-            user.studentQuestionCounter = studentQuestionCounter + 1;
-            user.studentInfo.push(ctx.message.text);
-            await user.save();
-            console.log(user);
-
+        const questions = studentQuestionNew.find( question => question.type === questionType).questions;
+        const questionsInLanguage = questions[language];
+            //new
+            if(studentQuestionCounter <= questionsInLanguage.length-1){
+                ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+                user.studentQuestionCounter = studentQuestionCounter + 1;
+                user.studentInfo.push(ctx.message.text);
+                await user.save();
+                console.log(user);
+            }
+            else{
+                ctx.reply(errorReply[language]);
+            }
+            //new
     }
     else if(currentStudentRegistering){
+        //new
         const questionsInLanguage = studentQuestionCurrent[language];
-        if(studentQuestionCounter >= questionsInLanguage.length){
-            user.currentStudentRegistering = false;
-            user.parentRegistering=true;
-            ctx.reply(transitionQuestion[language]);
-            const parentQuestionInLanguge = parentQuestion[language]; 
-            ctx.reply(parentQuestionInLanguge[parentQuestionCounter]);
-            user.parentQuestionCounter = parentQuestionCounter + 1;
-            user.studentInfo.push(ctx.message.text);
-            await user.save();
-        }
-        else{
-            const questionsInLanguage =studentQuestionCurrent[language];
+        if(studentQuestionCounter <= questionsInLanguage.length - 2){
             ctx.reply(questionsInLanguage[studentQuestionCounter]); 
             user.studentQuestionCounter = studentQuestionCounter + 1;
             user.studentInfo.push(ctx.message.text);
             await user.save();
         }
-        
-    }
-    else if(parentRegistering===true){
-        if(parentQuestionCounter === parentQuestion[language].length){
-            const student = new RegisteredStudent();
-            ctx.reply(successfulRegistrationReply[language]);
-            ctx.reply("Student id is: "+ user.studentId);
-        }
         else{
-            const questionsInLanguage =parentQuestion[language];
+            ctx.reply(errorReply[language]);
+        }
+        //new
+    }
+    else if(parentRegistering){
+        const questionsInLanguage =parentQuestion[language];
+        if(parentQuestionCounter <= questionsInLanguage.length - 1){
             ctx.reply(questionsInLanguage[parentQuestionCounter]); 
             user.parentQuestionCounter = parentQuestionCounter + 1;
             user.parentInfo.push(ctx.message.text);
             await user.save();
             console.log(user);
+        }
+        else{
+            ctx.reply(errorReply[language]);
         }
      }
      else{
@@ -435,17 +451,21 @@ bot.on("text",async (ctx)=>{
      }
    }
 )
+
+
+
 bot.on("photo",async (ctx)=>{
     const user = await userFindingHelper(ctx);
     const newStudentRegistering = user.newStudentRegistering;
     const currentStudentRegistering = user.currentStudentRegistering;
-    const  studentQuestionCounter=user.studentQuestionCounter;
+    const studentQuestionCounter=user.studentQuestionCounter;
     const parentQuestionCounter=user.parentQuestionCounter;
     const parentRegistering= user.parentRegistering;
     const questionType=user.questionType;
     const language =user.language;
-    if(newStudentRegistering===true){
-        if(questionType ===1 ){
+    const studentGrade = Number(user.studentGrade);
+    if(newStudentRegistering === true){
+        if(questionType === 1 ){
             const questions = studentQuestionNew.find( question => question.type === 1).questions;
             const questionsInLanguage = questions[language];
             if(studentQuestionCounter === questionsInLanguage.length){
@@ -458,7 +478,6 @@ bot.on("photo",async (ctx)=>{
                 console.log(ctx.message);
                 user.studentInfo.push(ctx.message.photo[0].file_id);
                 await user.save();
-               
                 console.log(user);
             }
             else{
@@ -500,7 +519,7 @@ bot.on("photo",async (ctx)=>{
                 await user.save();
                 console.log(user);
             }
-            if(studentQuestionCounter===6){
+            else if(studentQuestionCounter === 6){
                 user.newStudentRegistering = false;
                 user.parentRegistering=true;
                 ctx.reply(transitionQuestion[language]);
@@ -509,7 +528,7 @@ bot.on("photo",async (ctx)=>{
                 user.parentQuestionCounter = parentQuestionCounter + 1;
                 user.studentInfo.push(ctx.message.photo[0].file_id);
                 await user.save();
-                console.log(user);
+                console.log(user);  
             }
             else{
                 ctx.reply(errorReply[language]);
@@ -518,8 +537,15 @@ bot.on("photo",async (ctx)=>{
     }
     else if(currentStudentRegistering){
         const questionsInLanguage = studentQuestionCurrent[language];
-        if(studentQuestionCounter === questionsInLanguage.length){
-            user.newStudentRegistering = false;
+        if(studentQuestionCounter === questionsInLanguage.length -1){
+            ctx.reply(questionsInLanguage[studentQuestionCounter]); 
+            user.studentQuestionCounter = studentQuestionCounter + 1;
+            user.studentInfo.push(ctx.message.photo[0].file_id);
+            await user.save();
+        }
+        else if(studentQuestionCounter === questionsInLanguage.length){
+            //new
+            user.currentStudentRegistering = false;
             user.parentRegistering=true;
             ctx.reply(transitionQuestion[language]);
             const parentQuestionInLanguge = parentQuestion[language]; 
@@ -528,7 +554,7 @@ bot.on("photo",async (ctx)=>{
             user.studentInfo.push(ctx.message.photo[0].file_id);
             await user.save();
             console.log(user);
-
+            //new
         }
         else{
             ctx.reply(errorReply[language]);
@@ -538,31 +564,31 @@ bot.on("photo",async (ctx)=>{
     else if(parentRegistering){
         const questionsInLanguage = parentQuestion[language];
         if(parentQuestionCounter === questionsInLanguage.length){
-            // const student = new RegisteredStudent({studentId:user.studentId, studentName:user.studentName})
-            // ctx.reply(questionsInLanguage[studentQuestionCounter])
-            // user.studentQuestionCounter = studentQuestionCounter + 1;
-            // await user.save();
             user.parentInfo.push(ctx.message.photo[0].file_id);
             ctx.reply(successfulRegistrationReply[language]);
             await user.save();
-
-            if(user.questionType === 1){
+            if(user.newStudent){
+                //new
+                if(studentGrade === -2){
+                    const registeredStudent = new RegisteredStudent({
+                        studentName: user.studentInfo[0],
+                        studentId: user.studentId,
+                        studentGrade: user.studentGrade,
+                        yearOfBirth: user.studentInfo[1],
+                        studentSex: user.studentInfo[2],
+                        studentPicture: user.studentInfo[3],
+                        parentName: user.parentInfo[0],
+                        parentPhoneNumber: user.parentInfo[1],
+                        address: user.parentInfo[2],
+                        parentPicture: user.parentInfo[3]
+                    });
+                    await registeredStudent.save();
+                    console.log(registeredStudent);}
+            else if(studentGrade >= -1 && studentGrade <=8){
                 const registeredStudent = new RegisteredStudent({
                     studentName: user.studentInfo[0],
-                    yearOfBirth: user.studentInfo[1],
-                    studentSex: user.studentInfo[2],
-                    studentPicture: user.studentInfo[3],
-                    parentName: user.parentInfo[0],
-                    parentPhoneNumber: user.parentInfo[1],
-                    address: user.parentInfo[2],
-                    parentPicture: user.parentInfo[3]
-                });
-                await registeredStudent.save();
-                console.log(registeredStudent);
-            }
-            if(user.questionType === 2){
-                const registeredStudent = new RegisteredStudent({
-                    studentName: user.studentInfo[0],
+                    studentId: user.studentId,
+                    studentGrade: user.studentGrade,
                     yearOfBirth: user.studentInfo[1],
                     studentSex: user.studentInfo[2],
                     studentPicture: user.studentInfo[3],
@@ -575,7 +601,40 @@ bot.on("photo",async (ctx)=>{
                 await registeredStudent.save();
                 console.log(registeredStudent);
             }
-        }
+            else if(studentGrade >= 9 && studentGrade <=12){
+                const registeredStudent = new RegisteredStudent({
+                    studentName: user.studentInfo[0],
+                    studentId: user.studentId,
+                    studentGrade: user.studentGrade,
+                    yearOfBirth: user.studentInfo[1],
+                    studentSex: user.studentInfo[2],
+                    studentPicture: user.studentInfo[3],
+                    reportCard: user.studentInfo[4], 
+                    transcript: user.studentInfo[5],
+                    parentName: user.parentInfo[0],
+                    parentPhoneNumber: user.parentInfo[1],
+                    address: user.parentInfo[2],
+                    parentPicture: user.parentInfo[3]
+                });
+                await registeredStudent.save();
+                console.log(registeredStudent);
+            }    
+        }      
+        else if(user.currentStudent){
+            const registeredStudent = new RegisteredStudent({
+                studentId: user.studentInfo[0],
+                studentGrade: user.studentGrade,
+                studentPicture: user.studentInfo[1],
+                reportCard: user.studentInfo[2],
+                parentName: user.parentInfo[0],
+                parentPhoneNumber: user.parentInfo[1],
+                address: user.parentInfo[2],
+                parentPicture: user.parentInfo[3], 
+            });
+            await registeredStudent.save();
+            console.log(registeredStudent);
+        }      
+    }
         else{
             ctx.reply(errorReply[language]);
         }
@@ -584,8 +643,7 @@ bot.on("photo",async (ctx)=>{
         ctx.reply(errorReply[language]);
     }
  }
-)      
+) 
 
-bot.launch()  ; 
-    
- 
+//bot
+bot.launch();
