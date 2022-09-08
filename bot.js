@@ -3,6 +3,7 @@ const {Telegraf} = require("telegraf") //initializing the telegraf package
 const dotenv = require("dotenv"); //to store sensitive information like api keys
 dotenv.config();
 const bot= new Telegraf(process.env.TOKEN); //our bot token
+const express = require("express"); //initializing the express package
 const axios = require("axios"); //to send http requests(to connect to hahucloud)
 const fs = require("fs"); //to intereact with files on the computer
 const mongoose = require('mongoose'); //to have easier connection with our mongodb database
@@ -33,13 +34,13 @@ const studentQuestionNew = [
 ]
 
 
-const studentQuestionCurrent=[["fullname","picture of student","picture of report card"],
-    ["ሙሉ ስም","የተማሪው ፎቶ","የውጤት ካርድ ፎቶ"],
-    ["maqaa","suura barataa","suura riipoort kaardii"]]; //new: student id?
+const studentQuestionCurrent=[["Insert the student id number","picture of student","picture of report card"],
+    ["የተማሪው መለያ ቁጥር ያስገቡ","የተማሪው ፎቶ","የውጤት ካርድ ፎቶ"],
+    ["...","suura barataa","suura riipoort kaardii"]]; //new: student id?
 
 const transitionQuestion = [
     "you have finished filling the student form next will be parent form",
-    "የተማሪ ፎርም ሞልተው ጨርሰዋል የወላጅ ይከትላል",
+    "የተማሪ ፎርም ሞልተው ጨርሰዋል የወላጅ ይከተላል",
     "Ragaa barataa guuttanii xumurtaniittu,gara ragaa maatiitti darbaa"
 ]
 const parentQuestion=[["Parent's fullname", "phone numeber of parent","address","picture of parent"],
@@ -47,8 +48,12 @@ const parentQuestion=[["Parent's fullname", "phone numeber of parent","address",
     ["maqaa","lakkoofsa bilbila maatii","teessoo","suura matii"]]
  
 const successfulRegistrationReply = [
-    "you have finished filling the form wait untill the information is detected you will recive SMStext of confirmation   ","ፎርሙን ሞልተው ጨርሰዋል ትንሽ  ይጠብኩ የማረጋገጫ SMS መለክት ይገባሎታል  ","formii gutanii xumurtanii jirtuu xiqqoo eegee ergaan gabaabee isin ga'aati."
+    "you have finished filling the form wait untill the information is detected you will recive SMStext of confirmation","ፎርሙን ሞልተው ጨርሰዋል ትንሽ  ይጠብኩ የማረጋገጫ SMS መለክት ይገባሎታል","formii gutanii xumurtanii jirtuu xiqqoo eegee ergaan gabaabee isin ga'aati."
 ] 
+const userIdReply = [
+    "student id: ",  "የተማሪው መለያ ቁጥር፡ ", " student id: "
+]
+
 
 const errorReply = [
     "wrong input, please use '/help' to see the command list","የተሳሳተ መርጃ እባኮት '/help'በመጫን የሚተከሟቸወን ትዕዛዛት የመልከቱ ",""
@@ -142,6 +147,7 @@ userFindingHelper= async (ctx)=>{
     const user = await User.findOne(query);
     return user;
 }
+
 //language changing helper: updates the language the user choose using their chat id
 languageHelper = async (ctx, languageNum) =>{
     const userChatId = ctx.chat.id;
@@ -228,13 +234,12 @@ bot.start(async (ctx)=>{
     const user = await userFindingHelper(ctx);
     const language = user.language;
     const query = {userId:userChatId}
-    const studentIdTemp = "student-" + Date.now();
-    await User.findOneAndReplace(query, {userId:userChatId, language:language, studentId:studentIdTemp});    
+    const studentIdTemp = "s-" + Date.now();
+    await User.findOneAndReplace(query, {userId:userChatId, language:language, studentId:studentIdTemp});
     if(language === 0){
     //if the user chooses the first(English) language
     studentStatusHelper(ctx,studentStatusQuestions[0])
     }
-
     else if (language === 1){
         //if the user chooses the second(Amharic) language
     studentStatusHelper(ctx,studentStatusQuestions[1])
@@ -245,7 +250,8 @@ bot.start(async (ctx)=>{
     }
 })
 
-//
+//payment confirmation
+
 
 
 
@@ -275,7 +281,7 @@ bot.action('languageTwo', async ctx=>{
 bot.action('languageThree', async ctx=>{
     languageHelper(ctx,2);
     ctx.answerCbQuery();
-    ctx.reply("Galmee jalqabuuf ajaja kana xuqi'/register'።");
+    ctx.reply("Galmee jalqabuuf ajaja kana xuqi '/register'።");
 })  
 
 //student status action
@@ -345,7 +351,6 @@ bot.action(['-2','-1','0','1','2','3','4','5','6','7','8','9','10','11','12'] , 
     await user.save();
     if(newStudentRegistering){
         //starter
-        user.studentId = "S-"+Date.now();
         await user.save();
         if( user.studentGrade === -2){ //new
             user.questionType = 1;
@@ -397,7 +402,7 @@ bot.on("text",async (ctx)=>{
     const language = user.language;
     const currentStudentRegistering = user.currentStudentRegistering;
     const newStudentRegistering = user.newStudentRegistering;
-    const  parentRegistering=user.parentRegistering;
+    const parentRegistering=user.parentRegistering;
     let studentQuestionCounter = user.studentQuestionCounter;
     let parentQuestionCounter = user.parentQuestionCounter;
     let questionType=user.questionType;
@@ -569,6 +574,7 @@ bot.on("photo",async (ctx)=>{
             await user.save();
             if(user.newStudent){
                 //new
+                ctx.reply(userIdReply[language] + user.studentId);
                 if(studentGrade === -2){
                     const registeredStudent = new RegisteredStudent({
                         studentName: user.studentInfo[0],
